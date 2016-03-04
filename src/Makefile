@@ -28,19 +28,19 @@ clean:
 	rm -f mp32.bin mp64.bin mp32.exe mp64.exe mp32.app mp64.app
 
 mp32.bin: mp.c
-	$(CC_LINUX32)   $(CFLAGS_LINUX32)   -o $@ $^
+	-$(CC_LINUX32)   $(CFLAGS_LINUX32)   -o $@ $^
 
 mp64.bin: mp.c
-	$(CC_LINUX64)   $(CFLAGS_LINUX64)   -o $@ $^
+	-$(CC_LINUX64)   $(CFLAGS_LINUX64)   -o $@ $^
 
 mp32.exe: mp.c
-	$(CC_WINDOWS32) $(CFLAGS_WINDOWS32) -o $@ $^
+	-$(CC_WINDOWS32) $(CFLAGS_WINDOWS32) -o $@ $^
 
 mp64.exe: mp.c
-	$(CC_WINDOWS64) $(CFLAGS_WINDOWS64) -o $@ $^
+	-$(CC_WINDOWS64) $(CFLAGS_WINDOWS64) -o $@ $^
 
 mp32.app: mp.c
-	$(CC_OSX32)     $(CFLAGS_OSX32)     -o $@ $^
+	-$(CC_OSX32)     $(CFLAGS_OSX32)     -o $@ $^
 
 mp64.app: mp.c
-	$(CC_OSX64)     $(CFLAGS_OSX64)     -o $@ $^
+	-$(CC_OSX64)     $(CFLAGS_OSX64)     -o $@ $^
