@@ -28,6 +28,8 @@
 #define INCREMENT        0
 #define INCREMENT_MIN    1
 #define INCREMENT_MAX    PW_MAX
+#define SKIP             0
+#define LIMIT            0
 
 typedef struct __cs
 {
@@ -317,16 +319,44 @@ static int next (char *word_buf, cs_t *css_buf, const int pos, int *occurs)
   return -1;
 }
 
-static int find_pos (cs_t *cs, char c)
+void word_of_pos (cs_t *css, int len, uint64_t pos, char word[])
 {
-  int i;
+  uint64_t total_len[len + 1];
+  int i, l;
 
-  for (i = 0; i < cs->cs_len; i++)
+  total_len[len] = 1;
+
+  for (l = len - 1; l >= 0; l--)
   {
-    if (cs->cs_buf[i] == c) return i;
+    total_len[l] = css[l].cs_len * total_len[l + 1];
+    if (pos < total_len[l]) break;
   }
 
-  return -1;
+  for (i = 0; i < l; i++)
+  {
+    word[i] = css[i].cs_buf[css[i].cs_pos];
+    css[i].cs_pos++;
+  }
+
+  for (; l < len; l++)
+  {
+    if (pos)
+    {
+      i = pos / total_len[l + 1];
+      pos %= total_len[l + 1];
+
+      if (i)
+      {
+        word[l] = css[l].cs_buf[i];
+        css[l].cs_pos = ++i;
+
+        continue;
+      }
+    }
+
+    word[l] = css[l].cs_buf[css[l].cs_pos];
+    css[l].cs_pos++;
+  }
 }
 
 int main (int argc, char *argv[])
@@ -343,8 +373,8 @@ int main (int argc, char *argv[])
   char *increment_data    = NULL;
   int   increment_min     = INCREMENT_MIN;
   int   increment_max     = INCREMENT_MAX;
-  char *skip              = NULL;
-  char *limit             = NULL;
+  uint64_t skip           = SKIP;
+  uint64_t limit          = LIMIT;
   char *output_file       = NULL;
   char *custom_charset_1  = NULL;
   char *custom_charset_2  = NULL;
@@ -401,8 +431,8 @@ int main (int argc, char *argv[])
       case IDX_OCCUR_MAX:         occur_max         = atoi (optarg);  break;
       case IDX_INCREMENT:         increment         = 1;
                                   increment_data    = optarg;         break;
-      case IDX_SKIP:              skip              = optarg;         break;
-      case IDX_LIMIT:             limit             = optarg;         break;
+      case IDX_SKIP:              skip              = atoll (optarg); break;
+      case IDX_LIMIT:             limit             = atoll (optarg); break;
       case IDX_OUTPUT_FILE:       output_file       = optarg;         break;
       case IDX_CUSTOM_CHARSET_1:  custom_charset_1  = optarg;         break;
       case IDX_CUSTOM_CHARSET_2:  custom_charset_2  = optarg;         break;
@@ -665,61 +695,12 @@ int main (int argc, char *argv[])
 
   /* run css */
 
-  if (skip)
-  {
-    int skip_len = strlen (skip);
-
-    if (skip_len == css_cnt)
-    {
-      int i;
-
-      for (i = 0; i < css_cnt; i++)
-      {
-        int pos = find_pos (&css[i], skip[i]);
-
-        if (pos == -1)
-        {
-          fprintf (stderr, "ERROR: value '%c' in position '%d' of skip parameter '%s' is not part of position '%d' in mask '%s'\n", skip[i], i + 1, skip, i + 1, line_buf);
-
-          return (-1);
-        }
-      }
-    }
-    else
-    {
-      fprintf (stderr, "ERROR: size of '%s' from skip parameter is not equal to size of mask '%s'\n", skip, line_buf);
-
-      return (-1);
-    }
-  }
-
-  if (limit)
-  {
-    int limit_len = strlen (limit);
-
-    if (limit_len == css_cnt)
-    {
-      int i;
-
-      for (i = 0; i < css_cnt; i++)
-      {
-        int pos = find_pos (&css[i], limit[i]);
-
-        if (pos == -1)
-        {
-          fprintf (stderr, "ERROR: value '%c' in position '%d' of limit parameter '%s' is not part of position '%d' in mask '%s'\n", limit[i], i + 1, limit, i + 1, line_buf);
-
-          return (-1);
-        }
-      }
-    }
-    else
-    {
-      fprintf (stderr, "ERROR: size of '%s' from limit parameter is not equal to size of mask '%s'\n", limit, line_buf);
-
-      return (-1);
-    }
-  }
+  // if (skip)
+  // {
+  //   TODO: validate skip
+  //   fprintf (stderr, "ERROR: size of '%s' from skip parameter is not equal to size of mask '%s'\n", skip, line_buf);
+  //   return (-1);
+  // }
 
   int min = css_cnt;
   int max = css_cnt;
@@ -793,6 +774,8 @@ int main (int argc, char *argv[])
 
   out_t *out = malloc (sizeof (out_t));
 
+  uint64_t total_cnt = 0;
+
   for (len = min; len <= max; len++)
   {
     char word_buf[PW_MAX];
@@ -824,22 +807,24 @@ int main (int argc, char *argv[])
 
     if (skip)
     {
-      int i;
-
-      for (i = 0; i < len; i++)
-      {
-        css[i].cs_pos = find_pos (&css[i], skip[i]);
-
-        word_buf[i] = css[i].cs_buf[css[i].cs_pos];
-
-        css[i].cs_pos++;
-      }
+      word_of_pos (css, len, skip, word_buf);
 
       memcpy (out->buf + out->pos, word_buf, word_len);
 
       out->pos += word_len;
 
-      skip = NULL;
+      if (limit == 1)
+      {
+        fwrite (out->buf, 1, out->pos, fp_out);
+
+        out->pos = 0;
+
+        break;
+      }
+
+      total_cnt++;
+
+      skip = 0;
     }
     else
     {
@@ -918,18 +903,7 @@ int main (int argc, char *argv[])
 
       out->pos += word_len;
 
-      if (limit)
-      {
-        if (memcmp (word_buf + first, limit + first, len - first) == 0)
-        {
-          if (memcmp (word_buf, limit, len) == 0)
-          {
-            limit = NULL;
-
-            break;
-          }
-        }
-      }
+      if (limit && (++total_cnt == limit)) break;
 
       if (out->pos < OUTBUFSZ) continue;
 
