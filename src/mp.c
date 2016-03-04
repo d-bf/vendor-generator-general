@@ -80,8 +80,8 @@ static const char *USAGE_BIG[] =
   "",
   "* Resources:",
   "",
-  "  -s,  --start-at=WORD       Start at specific position",
-  "  -l,  --stop-at=WORD        Stop at specific position",
+  "  -s,  --skip=NUM            skip number of words (for restore)",
+  "  -l,  --limit=NUM           limit number of words (for distributed)",
   "",
   "* Files:",
   "",
@@ -343,8 +343,8 @@ int main (int argc, char *argv[])
   char *increment_data    = NULL;
   int   increment_min     = INCREMENT_MIN;
   int   increment_max     = INCREMENT_MAX;
-  char *start_at          = NULL;
-  char *stop_at           = NULL;
+  char *skip              = NULL;
+  char *limit             = NULL;
   char *output_file       = NULL;
   char *custom_charset_1  = NULL;
   char *custom_charset_2  = NULL;
@@ -356,8 +356,8 @@ int main (int argc, char *argv[])
   #define IDX_HEX_CHARSET       0
   #define IDX_COMBINATIONS      1
   #define IDX_INCREMENT         'i'
-  #define IDX_START_AT          's'
-  #define IDX_STOP_AT           'l'
+  #define IDX_SKIP              's'
+  #define IDX_LIMIT             'l'
   #define IDX_OUTPUT_FILE       'o'
   #define IDX_SEQ_MAX           'q'
   #define IDX_OCCUR_MAX         'r'
@@ -375,8 +375,8 @@ int main (int argc, char *argv[])
     {"seq-max",         required_argument, 0, IDX_SEQ_MAX},
     {"occur-max",       required_argument, 0, IDX_OCCUR_MAX},
     {"increment",       required_argument, 0, IDX_INCREMENT},
-    {"start-at",        required_argument, 0, IDX_START_AT},
-    {"stop-at",         required_argument, 0, IDX_STOP_AT},
+    {"skip",            required_argument, 0, IDX_SKIP},
+    {"limit",           required_argument, 0, IDX_LIMIT},
     {"output-file",     required_argument, 0, IDX_OUTPUT_FILE},
     {"custom-charset1", required_argument, 0, IDX_CUSTOM_CHARSET_1},
     {"custom-charset2", required_argument, 0, IDX_CUSTOM_CHARSET_2},
@@ -401,8 +401,8 @@ int main (int argc, char *argv[])
       case IDX_OCCUR_MAX:         occur_max         = atoi (optarg);  break;
       case IDX_INCREMENT:         increment         = 1;
                                   increment_data    = optarg;         break;
-      case IDX_START_AT:          start_at          = optarg;         break;
-      case IDX_STOP_AT:           stop_at           = optarg;         break;
+      case IDX_SKIP:              skip              = optarg;         break;
+      case IDX_LIMIT:             limit             = optarg;         break;
       case IDX_OUTPUT_FILE:       output_file       = optarg;         break;
       case IDX_CUSTOM_CHARSET_1:  custom_charset_1  = optarg;         break;
       case IDX_CUSTOM_CHARSET_2:  custom_charset_2  = optarg;         break;
@@ -441,16 +441,16 @@ int main (int argc, char *argv[])
     return (-1);
   }
 
-  if (seq_max && start_at)
+  if (seq_max && skip)
   {
-    fprintf (stderr, "--seq-max can not be used with --start-at\n");
+    fprintf (stderr, "--seq-max can not be used with --skip\n");
 
     return (-1);
   }
 
-  if (seq_max && stop_at)
+  if (seq_max && limit)
   {
-    fprintf (stderr, "--seq-max can not be used with --stop-at\n");
+    fprintf (stderr, "--seq-max can not be used with --limit\n");
 
     return (-1);
   }
@@ -469,16 +469,16 @@ int main (int argc, char *argv[])
     return (-1);
   }
 
-  if (occur_max && start_at)
+  if (occur_max && skip)
   {
-    fprintf (stderr, "--occurrence-max can not be used with --start-at\n");
+    fprintf (stderr, "--occurrence-max can not be used with --skip\n");
 
     return (-1);
   }
 
-  if (occur_max && stop_at)
+  if (occur_max && limit)
   {
-    fprintf (stderr, "--occurrence-max can not be used with --stop-at\n");
+    fprintf (stderr, "--occurrence-max can not be used with --limit\n");
 
     return (-1);
   }
@@ -665,21 +665,21 @@ int main (int argc, char *argv[])
 
   /* run css */
 
-  if (start_at)
+  if (skip)
   {
-    int start_at_len = strlen (start_at);
+    int skip_len = strlen (skip);
 
-    if (start_at_len == css_cnt)
+    if (skip_len == css_cnt)
     {
       int i;
 
       for (i = 0; i < css_cnt; i++)
       {
-        int pos = find_pos (&css[i], start_at[i]);
+        int pos = find_pos (&css[i], skip[i]);
 
         if (pos == -1)
         {
-          fprintf (stderr, "ERROR: value '%c' in position '%d' of start-at parameter '%s' is not part of position '%d' in mask '%s'\n", start_at[i], i + 1, start_at, i + 1, line_buf);
+          fprintf (stderr, "ERROR: value '%c' in position '%d' of skip parameter '%s' is not part of position '%d' in mask '%s'\n", skip[i], i + 1, skip, i + 1, line_buf);
 
           return (-1);
         }
@@ -687,27 +687,27 @@ int main (int argc, char *argv[])
     }
     else
     {
-      fprintf (stderr, "ERROR: size of '%s' from start-at parameter is not equal to size of mask '%s'\n", start_at, line_buf);
+      fprintf (stderr, "ERROR: size of '%s' from skip parameter is not equal to size of mask '%s'\n", skip, line_buf);
 
       return (-1);
     }
   }
 
-  if (stop_at)
+  if (limit)
   {
-    int stop_at_len = strlen (stop_at);
+    int limit_len = strlen (limit);
 
-    if (stop_at_len == css_cnt)
+    if (limit_len == css_cnt)
     {
       int i;
 
       for (i = 0; i < css_cnt; i++)
       {
-        int pos = find_pos (&css[i], stop_at[i]);
+        int pos = find_pos (&css[i], limit[i]);
 
         if (pos == -1)
         {
-          fprintf (stderr, "ERROR: value '%c' in position '%d' of stop-at parameter '%s' is not part of position '%d' in mask '%s'\n", stop_at[i], i + 1, stop_at, i + 1, line_buf);
+          fprintf (stderr, "ERROR: value '%c' in position '%d' of limit parameter '%s' is not part of position '%d' in mask '%s'\n", limit[i], i + 1, limit, i + 1, line_buf);
 
           return (-1);
         }
@@ -715,7 +715,7 @@ int main (int argc, char *argv[])
     }
     else
     {
-      fprintf (stderr, "ERROR: size of '%s' from stop-at parameter is not equal to size of mask '%s'\n", stop_at, line_buf);
+      fprintf (stderr, "ERROR: size of '%s' from limit parameter is not equal to size of mask '%s'\n", limit, line_buf);
 
       return (-1);
     }
@@ -822,13 +822,13 @@ int main (int argc, char *argv[])
 
     out->pos = 0;
 
-    if (start_at)
+    if (skip)
     {
       int i;
 
       for (i = 0; i < len; i++)
       {
-        css[i].cs_pos = find_pos (&css[i], start_at[i]);
+        css[i].cs_pos = find_pos (&css[i], skip[i]);
 
         word_buf[i] = css[i].cs_buf[css[i].cs_pos];
 
@@ -839,7 +839,7 @@ int main (int argc, char *argv[])
 
       out->pos += word_len;
 
-      start_at = NULL;
+      skip = NULL;
     }
     else
     {
@@ -918,13 +918,13 @@ int main (int argc, char *argv[])
 
       out->pos += word_len;
 
-      if (stop_at)
+      if (limit)
       {
-        if (memcmp (word_buf + first, stop_at + first, len - first) == 0)
+        if (memcmp (word_buf + first, limit + first, len - first) == 0)
         {
-          if (memcmp (word_buf, stop_at, len) == 0)
+          if (memcmp (word_buf, limit, len) == 0)
           {
-            stop_at = NULL;
+            limit = NULL;
 
             break;
           }
