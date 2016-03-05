@@ -796,7 +796,7 @@ int main (int argc, char *argv[])
 
   out_t *out = malloc (sizeof (out_t));
 
-  uint64_t total_cnt = 0;
+  uint64_t total_cnt = 1;
 
   for (len = min; len <= max; len++)
   {
@@ -925,7 +925,11 @@ int main (int argc, char *argv[])
 
       out->pos += word_len;
 
-      if (limit && (++total_cnt == limit)) break;
+      if (limit == total_cnt++)
+      {
+        len = max + 1; // Break from for loop too
+        break;
+      }
 
       if (out->pos < OUTBUFSZ) continue;
 
