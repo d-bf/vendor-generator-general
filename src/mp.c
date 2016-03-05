@@ -695,13 +695,6 @@ int main (int argc, char *argv[])
 
   /* run css */
 
-  // if (skip)
-  // {
-  //   TODO: validate skip
-  //   fprintf (stderr, "ERROR: size of '%s' from skip parameter is not equal to size of mask '%s'\n", skip, line_buf);
-  //   return (-1);
-  // }
-
   int min = css_cnt;
   int max = css_cnt;
 
@@ -781,6 +774,12 @@ int main (int argc, char *argv[])
       {
         skip -= cnt;
       }
+    }
+
+    if (len > max) // Skip not resolved
+    {
+      fprintf (stderr, "ERROR: size of skip parameter is not in correct range\n");
+      return (-1);
     }
   }
 
