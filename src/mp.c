@@ -761,6 +761,29 @@ int main (int argc, char *argv[])
     return (0);
   }
 
+  /* Set min according to skip and then update skip */
+
+  if (skip)
+  {
+    uint64_t cnt;
+    int len;
+
+    for (len = min; len <= max; len++)
+    {
+      cnt = mp_get_sum(len, css);
+
+      if (skip < cnt)
+      {
+        min = len;
+        break;
+      }
+      else
+      {
+        skip -= cnt;
+      }
+    }
+  }
+
   int seq_start[PW_MAX];
 
   int len;
