@@ -284,11 +284,11 @@ static size_t mp_expand (const char *in_buf, const size_t in_len, char *out_buf,
 
 static int next (char *word_buf, cs_t *css_buf, const int pos, int *occurs)
 {
-  int i;
+  int i, r = 0;
 
-  for (i = pos - 1; i >= 0; i--)
+  for (i = pos - 1; i >= 0; i--, r++)
   {
-    const int c_old = word_buf[i];
+    const int c_old = word_buf[r];
 
     occurs[c_old]--;
 
@@ -300,7 +300,7 @@ static int next (char *word_buf, cs_t *css_buf, const int pos, int *occurs)
 
       occurs[c_new]++;
 
-      word_buf[i] = (char) c_new;
+      word_buf[r] = (char) c_new;
 
       cs->cs_pos++;
 
@@ -311,7 +311,7 @@ static int next (char *word_buf, cs_t *css_buf, const int pos, int *occurs)
 
     occurs[c_new]++;
 
-    word_buf[i] = (char) c_new;
+    word_buf[r] = (char) c_new;
 
     cs->cs_pos = 1;
   }
@@ -322,7 +322,7 @@ static int next (char *word_buf, cs_t *css_buf, const int pos, int *occurs)
 void word_of_pos (cs_t *css, int len, uint64_t pos, char word[])
 {
   uint64_t total_len[len + 1];
-  int i, l;
+  int i, l, r = len;
 
   total_len[len] = 1;
 
@@ -334,7 +334,7 @@ void word_of_pos (cs_t *css, int len, uint64_t pos, char word[])
 
   for (i = 0; i < l; i++)
   {
-    word[i] = css[i].cs_buf[css[i].cs_pos];
+    word[--r] = css[i].cs_buf[css[i].cs_pos];
     css[i].cs_pos++;
   }
 
@@ -347,14 +347,14 @@ void word_of_pos (cs_t *css, int len, uint64_t pos, char word[])
 
       if (i)
       {
-        word[l] = css[l].cs_buf[i];
+        word[--r] = css[l].cs_buf[i];
         css[l].cs_pos = ++i;
 
         continue;
       }
     }
 
-    word[l] = css[l].cs_buf[css[l].cs_pos];
+    word[--r] = css[l].cs_buf[css[l].cs_pos];
     css[l].cs_pos++;
   }
 }
