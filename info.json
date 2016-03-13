@@ -1,0 +1,30 @@
+{
+    "stdin" : [
+        "-i",
+        "LEN_MIN:LEN_MAX",
+        "-s",
+        "START",
+        "-l",
+        "OFFSET",
+        "CHAR1",
+        "CHAR2",
+        "CHAR3",
+        "CHAR4",
+        "MASK"
+    ],
+    "infile" : [
+        "-i",
+        "LEN_MIN:LEN_MAX",
+        "-s",
+        "START",
+        "-l",
+        "OFFSET",
+        "-o",
+        "IN_FILE",
+        "CHAR1",
+        "CHAR2",
+        "CHAR3",
+        "CHAR4",
+        "MASK"
+    ]
+}
